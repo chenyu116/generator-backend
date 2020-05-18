@@ -1,5 +1,6 @@
 import BluebirdPromise from "bluebird";
 import VueResource from "vue-resource";
+import Back from "../../components/Back.vue";
 
 BluebirdPromise.config({
   // Enable warnings
@@ -17,7 +18,7 @@ window.BP = BluebirdPromise;
 
 export default ({ Vue }) => {
   Vue.use(VueResource);
-
+  Vue.component("Back", Back);
   Vue.http.options.emulateHTTP = true;
   Vue.http.options.timeout = 10000;
 };

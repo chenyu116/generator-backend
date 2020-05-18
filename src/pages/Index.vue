@@ -1,35 +1,35 @@
 <template>
   <div class="q-pa-md row items-start q-gutter-md">
     <template v-if="loading">
-      <q-spinner-pie color="cyan" size="xl" v-if="!error" />
+      <q-spinner-pie color="grey" size="xl" v-if="!error" />
       <div v-if="error">
-        {{ error }}
-        <q-btn
-          icon="refresh"
-          class="q-ml-md"
-          dense=""
-          @click="getProjectFeatured()"
-        >
+        <q-btn icon="refresh" dense="" @click="getProjectFeatured()">
           重新读取</q-btn
         >
+        <br />
+        {{ error }}
       </div>
     </template>
     <template v-if="!loading && !error">
+      <div class="col-12">
+        <q-toolbar>
+          <q-btn flat round dense icon="whatshot" />
+          <q-toolbar-title>已创建项目</q-toolbar-title>
+        </q-toolbar>
+      </div>
       <q-card
-        class="my-card"
+        class="my-card cursor-pointer"
         v-for="(item, index) in projectFeatured"
         :key="index"
         @click="goEdit(item)"
       >
         <q-img :src="item.project_content" height="260px">
           <div class="absolute-bottom">
-            <div class="text-subtitle2">{{ item.project_name }}</div>
+            <div class="text-subtitle2">
+              {{ item.project_id }}. {{ item.project_name }}
+            </div>
           </div>
         </q-img>
-
-        <q-card-actions>
-          功能数量：{{ item.project_features.length }}
-        </q-card-actions>
       </q-card>
     </template>
   </div>
@@ -39,6 +39,7 @@
 export default {
   name: "Index",
   created() {
+    this.$store.commit("updateCurrentProject", {});
     this.getProjectFeatured();
   },
   data() {
@@ -55,7 +56,7 @@ export default {
       const self = this;
       return new Promise(function(resolve) {
         self.$http
-          .get("/v1/project/featured")
+          .get("/v1/project/initialized")
           .then(function(resp) {
             if (resp.body) {
               // for (let i = 0; i < 15; i++) {
@@ -78,7 +79,8 @@ export default {
     },
     goEdit(item) {
       console.log(item);
-      this.$router.push("/project");
+      this.$store.commit("updateCurrentProject", item);
+      this.$router.push("/dash/" + item.project_id);
     }
   }
 };

@@ -1,7 +1,7 @@
 <template>
   <q-layout class="bg-grey-1">
-    <q-header elevated class="text-white" height-hint="61.59">
-      <q-toolbar class="q-py-sm q-px-md">
+    <q-header elevated="" height-hint="61.59">
+      <q-toolbar class="text-white bg-grey-8 q-py-sm q-px-md ">
         <q-btn
           round
           dense
@@ -20,16 +20,14 @@
           dense
           standout
           use-input
-          fill-input
+          :value="currentProjectId"
           hide-selected
           class="GL__toolbar-select"
           color="black"
-          :stack-label="false"
+          :stack-label="true"
           label="搜索项目"
           :options="filteredOptions"
           @filter="filter"
-          @input-value="setModel"
-          :value="currentProjectId"
           style="width: 300px"
         >
           <!-- <template v-slot:no-option>
@@ -47,7 +45,7 @@
               v-bind="scope.itemProps"
               v-on="scope.itemEvents"
               class="GL__select-GL__menu-link"
-              @click="projectSelect(scope.opt.value)"
+              @click="projectSelect(scope.opt)"
             >
               <q-item-section side>
                 <q-icon name="collections_bookmark" />
@@ -73,44 +71,44 @@
         </q-select>
 
         <div class="q-pl-sm q-gutter-sm row items-center no-wrap">
-          <q-btn
-            v-if="$q.screen.gt.xs"
-            dense
-            flat
-            round
-            size="sm"
-            icon="notifications"
-          />
+          <q-btn unelevated="" to="/"
+            ><q-icon name="home" size="xs"></q-icon>首页</q-btn
+          >
+        </div>
+        <div
+          class="q-pl-sm q-gutter-sm row items-center no-wrap"
+          v-if="$store.state.currentProject.project_id > 0"
+        >
           <q-btn v-if="$q.screen.gt.xs" dense flat>
-            <div class="row items-center no-wrap">
-              <q-icon name="add" size="20px" />
-              <q-icon
+            <div class="row items-center no-wrap text-cyan text-bold text-h5">
+              {{ $store.state.currentProject.project_id }} |
+              {{ $store.state.currentProject.project_name }}
+              <!-- <q-icon
                 name="arrow_drop_down"
-                size="16px"
+                size="24px"
                 style="margin-left: -2px"
-              />
+              /> -->
             </div>
-            <q-menu auto-close>
-              <q-list dense style="min-width: 100px">
-                <q-item clickable class="GL__menu-link">
-                  <q-item-section>New repository</q-item-section>
+            <!-- <q-menu auto-close>
+              <q-list style="min-width: 100px">
+                <q-item
+                  clickable
+                  class=""
+                  :to="`/project/${$store.state.currentProject.project_id}`"
+                >
+                  <q-item-section>总览</q-item-section>
                 </q-item>
-                <q-item clickable class="GL__menu-link">
-                  <q-item-section>Import repository</q-item-section>
-                </q-item>
-                <q-item clickable class="GL__menu-link">
-                  <q-item-section>New gist</q-item-section>
-                </q-item>
-                <q-item clickable class="GL__menu-link">
-                  <q-item-section>New organization</q-item-section>
-                </q-item>
-                <q-separator />
-                <q-item-label header>This repository</q-item-label>
-                <q-item clickable class="GL__menu-link">
-                  <q-item-section>New issue</q-item-section>
+                <q-item
+                  clickable
+                  class=""
+                  :to="
+                    `/project/${$store.state.currentProject.project_id}/boot`
+                  "
+                >
+                  <q-item-section>前置加载</q-item-section>
                 </q-item>
               </q-list>
-            </q-menu>
+            </q-menu> -->
           </q-btn>
         </div>
       </q-toolbar>
@@ -123,52 +121,52 @@
 </template>
 
 <script>
-const stringOptions = [
-  "quasarframework/quasar",
-  "quasarframework/quasar-awesome"
-];
-
 export default {
-  name: "MyLayout",
-
+  name: "Layout",
   data() {
     return {
-      currentProjectId: 0,
       text: "",
       options: null,
       filteredOptions: []
     };
+  },
+  computed: {
+    currentProjectId: {
+      get() {
+        return this.$store.state.currentProject.project_id;
+      },
+      set() {}
+    }
   },
   watch: {
     currentProjectId(val) {
       console.log("watch currentProjectId", val);
     }
   },
-  mounted() {
-    console.dir(BP);
+  created() {
+    console.log("mounted", this.currentProjectId);
     this.readProjects();
   },
   methods: {
     readProjects() {
       const self = this;
       return new Promise(function(resolve) {
-        self.$http
-          .get("/v1/projects", {
-            params: {}
-          })
-          .then(function(resp) {
-            console.log(resp);
-            if (resp.body) {
-              self.options = resp.body;
+        self.$http.get("/v1/projects").then(function(resp) {
+          if (resp.body) {
+            self.options = resp.body;
+            const projects = {};
+            for (let i = 0; i < resp.body.length; i++) {
+              projects[resp.body[i].project_id] = resp.body[i];
             }
-          });
+            self.$store.commit("updateProjects", projects);
+          }
+        });
       });
     },
     filter(val, update) {
       if (this.options === null) {
-        // this.options = stringOptions;
-        this.$refs.search.filter("");
-        update();
+        // this.$refs.search.filter("");
+        // update();
         // load data
 
         return;
@@ -200,23 +198,20 @@ export default {
             .filter(op =>
               (op.project_id + op.project_name).includes(val.toLowerCase())
             )
-            .map(op => ({
-              label: op.project_id + ". " + op.project_name,
-              value: op.project_id
-            }))
+            .map(op =>
+              Object.assign({}, op, {
+                label: op.project_id + ". " + op.project_name,
+                value: op.project_id
+              })
+            )
         ];
       });
     },
-    setModel(val) {
-      console.log("setModel", val);
-      this.currentProjectId = val;
-    },
     projectSelect(val) {
-      console.log("projectSelect", val);
+      this.$store.commit("updateCurrentProject", val);
+      this.$router.push("/dash/" + val.project_id);
     }
-  },
-
-  created() {}
+  }
 };
 </script>
 
@@ -255,9 +250,4 @@ export default {
     color: $blue-grey-6
     &:hover
       color: $light-blue-9
-
-  &__toolbar-select.q-field--focused
-    width: 450px !important
-    .q-field__append
-      display: none
 </style>
