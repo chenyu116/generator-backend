@@ -81,7 +81,9 @@
           <q-card-actions align="right">
             <template v-if="item.project_features_id">
               <q-btn flat icon="edit"> 配置</q-btn>
-              <q-btn flat icon="link_off"> 卸载</q-btn>
+              <q-btn flat icon="view_compact" @click="view(item.feature_id)">
+                查看</q-btn
+              >
             </template>
             <template v-if="!item.project_features_id"
               ><q-btn flat icon="link" @click="install(item.feature_id)">
@@ -136,10 +138,12 @@
           <q-card-actions align="right">
             <template v-if="item.project_features_id">
               <q-btn flat icon="edit"> 配置</q-btn>
-              <q-btn flat icon="link_off"> 卸载</q-btn>
+              <q-btn flat icon="view_compact" @click="view(item.feature_id)">
+                查看</q-btn
+              >
             </template>
             <template v-if="!item.project_features_id"
-              ><q-btn flat icon="link" @click="install(item.feature_id)">
+              ><q-btn flat icon="link" @click="view(item.feature_id)">
                 安装</q-btn
               ></template
             >
@@ -201,8 +205,8 @@ export default {
     };
   },
   methods: {
-    install(featureId) {
-      this.$router.push("/install/" + featureId);
+    view(featureId) {
+      this.$router.push("/package/" + featureId);
     },
     projectInit() {
       this.initialize.processing = true;
