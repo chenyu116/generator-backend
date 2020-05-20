@@ -6,8 +6,8 @@ const routes = [
       { path: "/", component: () => import("pages/Index.vue") },
       { path: "/dash/:id", component: () => import("pages/Dash.vue") },
       {
-        path: "/package/:featureId",
-        component: () => import("pages/Package.vue")
+        path: "/install/:featureId",
+        component: () => import("pages/Install.vue")
       }
     ]
   }

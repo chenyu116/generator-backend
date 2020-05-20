@@ -33,20 +33,17 @@
           <q-toolbar-title>总览</q-toolbar-title>
         </q-toolbar>
       </div>
-      <template v-if="features['entrance']">
+      <template>
         <q-toolbar class="bg-grey-3">
           <q-icon name="pages" size="md" />
           <q-toolbar-title class="text-subtitle1">
             入口页面
           </q-toolbar-title>
-          <q-btn flat dense v-if="features['entrance'].length === 0">
-            <q-icon name="link" size="xs" left="" /> 添加功能
-          </q-btn>
         </q-toolbar>
         <q-card
           class="my-card"
-          v-for="(item, index) in mergedFeatures['entrance']"
-          :key="index"
+          v-for="(item, index) in entrance"
+          :key="`entrance-${index}`"
           @click="goEdit(item)"
         >
           <q-card-section>
@@ -58,11 +55,11 @@
           </q-card-section>
           <q-card-section>
             labels:
-            <q-chip v-for="(label, i) in item.feature_labels" :key="i">{{
-              label
-            }}</q-chip>
-          </q-card-section>
-          <q-card-section>
+            <q-chip
+              v-for="(label, i) in item.feature_labels"
+              :key="`entrance-labels-${i}`"
+              >{{ label }}</q-chip
+            ><br />
             版本:
             <q-chip v-if="item.feature_version_name">
               {{ item.feature_version_name }}
@@ -70,26 +67,11 @@
             <div class="text-subtitle2" v-if="item.project_features_id">
               <q-icon color="green" name="check_circle_outline" /> 已安装
             </div>
-            <q-chip
-              v-for="(version, versionIndex) in item.feature_version"
-              :key="versionIndex"
-              >{{ version.feature_version_name }}</q-chip
-            >
           </q-card-section>
           <q-separator />
 
           <q-card-actions align="right">
-            <template v-if="item.project_features_id">
-              <q-btn flat icon="edit"> 配置</q-btn>
-              <q-btn flat icon="view_compact" @click="view(item.feature_id)">
-                查看</q-btn
-              >
-            </template>
-            <template v-if="!item.project_features_id"
-              ><q-btn flat icon="link" @click="install(item.feature_id)">
-                安装</q-btn
-              ></template
-            >
+            <q-btn flat icon="edit"> 配置</q-btn>
           </q-card-actions>
         </q-card>
       </template>
@@ -97,13 +79,13 @@
         <q-toolbar class="bg-grey-3">
           <q-icon name="grain" size="md" />
           <q-toolbar-title class="text-subtitle1">
-            功能
+            已安装
           </q-toolbar-title>
         </q-toolbar>
         <q-card
           class="my-card"
-          v-for="(item, index) in mergedFeatures['feature']"
-          :key="index"
+          v-for="(item, index) in installed"
+          :key="`installed-${index}`"
           @click="goEdit(item)"
         >
           <q-card-section>
@@ -115,20 +97,17 @@
           </q-card-section>
           <q-card-section>
             labels:
-            <q-chip v-for="(label, i) in item.feature_labels" :key="i">{{
-              label
-            }}</q-chip>
+            <q-chip
+              v-for="(label, i) in item.feature_labels"
+              :key="`installed-labels-${i}`"
+              >{{ label }}</q-chip
+            >
           </q-card-section>
           <q-card-section>
             版本:
             <q-chip v-if="item.feature_version_name">
               {{ item.feature_version_name }}
             </q-chip>
-            <q-chip
-              v-for="(version, versionIndex) in item.feature_version"
-              :key="versionIndex"
-              >{{ version.feature_version_name }}</q-chip
-            >
             <div class="text-subtitle2" v-if="item.project_features_id">
               <q-icon color="green" name="check_circle_outline" /> 已安装
             </div>
@@ -138,18 +117,58 @@
           <q-card-actions align="right">
             <template v-if="item.project_features_id">
               <q-btn flat icon="edit"> 配置</q-btn>
-              <q-btn flat icon="view_compact" @click="view(item.feature_id)">
-                查看</q-btn
-              >
             </template>
-            <template v-if="!item.project_features_id"
-              ><q-btn flat icon="link" @click="view(item.feature_id)">
-                安装</q-btn
-              ></template
-            >
           </q-card-actions>
         </q-card>
       </template>
+      <q-toolbar class="bg-grey-3">
+        <q-icon name="grain" size="md" />
+        <q-toolbar-title class="text-subtitle1">
+          可安装
+        </q-toolbar-title>
+      </q-toolbar>
+      <q-card
+        class="my-card"
+        v-for="(item, index) in features"
+        :key="`features-${index}`"
+        @click="goEdit(item)"
+      >
+        <q-card-section>
+          <div class="text-h6">{{ item.feature_name }}</div>
+        </q-card-section>
+
+        <q-card-section>
+          {{ item.feature_intro }}
+        </q-card-section>
+        <q-card-section>
+          labels:
+          <q-chip
+            v-for="(label, i) in item.feature_labels"
+            :key="`features-labels-${i}`"
+            >{{ label }}</q-chip
+          ><br />
+          版本:
+          <q-chip
+            v-for="(version, versionIndex) in item.feature_version"
+            :key="`features-version-${versionIndex}`"
+            >{{ version.feature_version_name }}</q-chip
+          ><br />
+          类型:
+          <q-chip
+            v-for="(type, typesIndex) in item.feature_types"
+            :key="`features-types-${typesIndex}`"
+            >{{ type }}</q-chip
+          >
+        </q-card-section>
+        <q-card-section> </q-card-section>
+        <q-separator />
+
+        <q-card-actions align="right">
+          <q-btn flat icon="link" @click="install(item.feature_id)">
+            安装</q-btn
+          >
+        </q-card-actions>
+      </q-card>
       <!-- <div class="fixed-bottom col-12">
         <q-footer class="transparent text-primary text-center">
           <q-btn color="grey-8" icon="save">保存当前选择</q-btn>
@@ -199,14 +218,15 @@ export default {
       loading: false,
       initialize: { processing: false, msg: "", need: false },
       error: "",
-      mergedFeatures: {},
-      features: {},
-      projectFeatures: {}
+      features: [],
+      entrance: [],
+      onBootInstalled: [],
+      installed: []
     };
   },
   methods: {
-    view(featureId) {
-      this.$router.push("/package/" + featureId);
+    install(featureId) {
+      this.$router.push("/install/" + featureId);
     },
     projectInit() {
       this.initialize.processing = true;
@@ -239,14 +259,15 @@ export default {
     init() {
       this.loading = true;
       this.error = "";
+      this.$store.commit("updateInstalled", []);
       const self = this;
       self
-        .getFeatures()
+        .getProjectFeatures()
         .then(function() {
-          return self.getProjectFeatures();
+          return self.getFeatures();
         })
         .then(function() {
-          self.mergeFeatures();
+          // self.mergeFeatures();
           self.error = "";
           self.loading = false;
         })
@@ -266,26 +287,28 @@ export default {
     },
     mergeFeatures() {
       const mergedFeatures = this.projectFeatures;
-      for (const i in this.features) {
-        let tempType = i;
-        if (i !== "entrance") tempType = "feature";
-        if (!mergedFeatures[tempType]) {
-          mergedFeatures[tempType] = {};
-        }
-        for (let t = 0; t < this.features[i].length; t++) {
-          if (!mergedFeatures[tempType][this.features[i][t].feature_id]) {
-            mergedFeatures[tempType][
-              this.features[i][t].feature_id
-            ] = this.features[i][t];
-          }
-        }
-      }
-      this.mergedFeatures = mergedFeatures;
+      console.log("this.projectFeatures", this.projectFeatures);
+      // for (const i in this.features) {
+      //   let tempType = i;
+      //   if (i !== "entrance") tempType = "feature";
+      //   if (!mergedFeatures[tempType]) {
+      //     mergedFeatures[tempType] = {};
+      //   }
+      //   for (let t = 0; t < this.features[i].length; t++) {
+      //     if (!mergedFeatures[tempType][this.features[i][t].feature_id]) {
+      //       mergedFeatures[tempType][
+      //         this.features[i][t].feature_id
+      //       ] = this.features[i][t];
+      //     }
+      //   }
+      // }
+      // this.mergedFeatures = mergedFeatures;
       console.log("mergedFeatures", mergedFeatures);
     },
     getFeatures() {
-      this.features = {};
+      this.features = [];
       const self = this;
+      console.log("onBootInstalled", this.onBootInstalled);
       return new Promise(function(resolve, reject) {
         self.$http
           .get("/v1/features")
@@ -295,20 +318,12 @@ export default {
                 const r = resp.body[i];
                 r.feature_labels = r.feature_labels.split(",");
                 r.feature_types = r.feature_types.split(",");
-                for (let t = 0; t < r.feature_types.length; t++) {
-                  if (!self.features[r.feature_types[t]]) {
-                    self.features[r.feature_types[t]] = [];
+                if (r.feature_onboot) {
+                  if (self.onBootInstalled.indexOf(r.feature_id) === -1) {
+                    self.features.push(r);
                   }
-                  // for (let v = 0; v < r.feature_version.length; v++) {
-                  //   r.feature_version[v].feature_version_config = JSON.parse(
-                  //     r.feature_version[v].feature_version_config
-                  //   );
-                  //   r.feature_version[v].label =
-                  //     r.feature_version[v].feature_version_name;
-                  //   r.feature_version[v].value =
-                  //     r.feature_version[v].feature_version_id;
-                  // }
-                  self.features[r.feature_types[t]].push(r);
+                } else {
+                  self.features.push(r);
                 }
               }
             }
@@ -320,7 +335,6 @@ export default {
       });
     },
     getProjectFeatures() {
-      this.projectFeatures = {};
       const self = this;
       return new Promise(function(resolve, reject) {
         self.$http
@@ -337,16 +351,18 @@ export default {
                   r.project_features_type === "entrance"
                     ? "entrance"
                     : "feature";
-                if (!self.projectFeatures[featureType]) {
-                  self.projectFeatures[featureType] = {};
+                if (r.feature_onboot) {
+                  self.onBootInstalled.push(r.feature_id);
                 }
-                // r.project_features_config = JSON.parse(
-                //   r.project_features_config
-                // );
-                self.projectFeatures[featureType][r.feature_id] = r;
+                if (featureType === "entrance") {
+                  self.entrance.push(r);
+                } else {
+                  self.installed.push(r);
+                }
               }
+              self.$store.commit("updateInstalled", self.installed);
             }
-            console.log("projectFeatures", self.projectFeatures);
+
             resolve();
           })
           .catch(function(resp) {

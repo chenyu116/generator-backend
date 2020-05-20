@@ -12,160 +12,170 @@
     </div>
     <template v-if="!loading && !error">
       <q-card class="my-card">
-        <q-tabs
-          v-model="tab"
-          class="text-grey"
-          active-color="primary"
-          indicator-color="primary"
-          narrow-indicator
-        >
-          <q-tab name="info" label="信息" />
-          <q-tab name="files" label="文件" />
-        </q-tabs>
-
-        <q-separator />
-
-        <q-tab-panels v-model="tab">
-          <q-tab-panel name="info">
-            <!-- <q-img :src="item.project_content" height="260px">
+        <!-- <q-img :src="item.project_content" height="260px">
           <div class="absolute-bottom">
             <div class="text-subtitle2">{{ item.project_name }}</div>
           </div>
         </q-img> -->
-            <q-card-section class="text-h3">
-              {{ feature.feature_name }}
-            </q-card-section>
-            <q-card-section class="text-subtitle1">
-              {{ feature.feature_intro }}
-            </q-card-section>
-            <q-card-section class="">
-              labels:
-              <q-chip v-for="(label, i) in feature.feature_labels" :key="i">{{
-                label
-              }}</q-chip>
-            </q-card-section>
-            <q-card-section class="select">
-              类型选择:
-              <q-select
-                filled=""
-                :options="feature.feature_types"
-                v-model="form.type"
-                dense=""
-              />
-            </q-card-section>
-            <q-card-section class="select">
-              版本选择:
-              <q-select
-                filled=""
-                :options="feature.feature_version"
-                v-model="form.version"
-                dense=""
-              />
-            </q-card-section>
-            <q-card-section class="">
-              版本说明:
-              <div class="" v-html="versionIntro"></div>
-            </q-card-section>
-            <q-card-section class="">
-              配置:
-
-              <template v-for="(cf, indexConfig) in config.data">
-                <q-item-label
-                  class="bg-blue q-pa-xs text-white"
-                  :key="`name-${indexConfig}`"
-                  >{{ cf.name }}</q-item-label
-                >
-                <div class="row col-12 q-mt-md" :key="`add-${indexConfig}`">
-                  <q-input
-                    filled=""
-                    dense=""
-                    style="width:20%"
-                    v-model="add.key"
-                  /><span class="text-h5">:</span>
-                  <q-input
-                    style="width:65%"
-                    filled=""
-                    dense=""
-                    v-model="add.value"
-                  />
-                  <q-btn flat="" icon="add" @click="addParam(indexConfig)"
-                    >添加</q-btn
-                  >
-                </div>
-                <div
-                  class="row col-12 q-mt-md"
-                  :key="`div-${indexValue}`"
-                  v-for="(cfValue, indexValue) in cf.values"
-                >
-                  <q-input
-                    filled=""
-                    dense=""
-                    style="width:20%"
-                    v-model="cfValue.key"
-                  /><span class="text-h5">:</span>
-                  <q-input
-                    style="width:65%"
-                    filled=""
-                    dense=""
-                    v-model="cfValue.value"
-                  />
-                  <q-btn
-                    flat=""
-                    icon="delete"
-                    @click="delParam(indexConfig, indexValue)"
-                    >删除</q-btn
-                  >
-                </div>
-              </template>
-            </q-card-section>
-            <q-card-actions align="center">
-              <q-btn
+        <q-card-section class="text-h3">
+          {{ feature.feature_name }}
+        </q-card-section>
+        <q-card-section class="text-subtitle1">
+          {{ feature.feature_intro }}
+        </q-card-section>
+        <q-card-section class="">
+          labels:
+          <q-chip v-for="(label, i) in feature.feature_labels" :key="i">{{
+            label
+          }}</q-chip>
+        </q-card-section>
+        <q-card-section class="select">
+          类型选择:
+          <q-select
+            filled=""
+            :options="feature.feature_types"
+            v-model="form.type"
+            dense=""
+          />
+        </q-card-section>
+        <q-card-section class="select">
+          版本选择:
+          <q-select
+            filled=""
+            :options="feature.feature_version"
+            v-model="form.version"
+            dense=""
+          />
+        </q-card-section>
+        <q-card-section class="">
+          版本说明:
+          <div class="" v-html="versionIntro"></div>
+        </q-card-section>
+        <q-card-section class="">
+          配置:
+          <template
+            v-if="config.dependencies && config.dependencies.length > 0"
+          >
+            <q-item-label class="bg-blue q-pa-xs text-white q-mt-md"
+              >依赖检查
+              (请先安装需要依赖的功能，以保证此功能能正常使用)</q-item-label
+            >
+            <q-chip
+              class="row col-12 q-mt-md"
+              v-for="(cf, i) in config.dependencies"
+              :key="`dependencies-div-${i}`"
+            >
+              {{ cf }}
+              <q-icon
+                name="done"
                 color="green"
-                icon="link"
                 size="18px"
-                v-if="!feature.feature_onboot"
-                @click="install()"
-              >
-                安装</q-btn
-              >
-            </q-card-actions>
-            <q-card-section :class="`text-red`">{{
-              installStatus.message
-            }}</q-card-section>
-          </q-tab-panel>
+                v-if="installedLabels.indexOf(cf) >= 0"
+              />
+              <q-icon
+                name="clear"
+                color="red"
+                size="18px"
+                v-if="installedLabels.indexOf(cf) === -1"
+              />
+            </q-chip>
+          </template>
 
-          <q-tab-panel name="files">
-            <q-splitter v-model="splitterModel" style="height: 400px">
-              <template v-slot:before>
-                <div class="q-pa-md">
-                  <q-tree
-                    :nodes="simple"
-                    node-key="label"
-                    selected-color="primary"
-                    :selected.sync="selected"
-                    default-expand-all
-                  />
-                </div>
-              </template>
+          <template v-for="(cf, indexConfig) in config.data">
+            <q-item-label
+              class="bg-blue q-pa-xs text-white"
+              :key="`data-name-${indexConfig}`"
+              >{{ cf.name }}</q-item-label
+            >
+            <div class="row col-12 q-mt-md" :key="`data-add-${indexConfig}`">
+              <q-input
+                filled=""
+                dense=""
+                style="width:20%"
+                v-model="add.key"
+              /><span class="text-h5">:</span>
+              <q-input
+                style="width:65%"
+                filled=""
+                dense=""
+                v-model="add.value"
+              />
+              <q-btn flat="" icon="add" @click="addParam(indexConfig)"
+                >添加</q-btn
+              >
+            </div>
+            <div
+              class="row col-12 q-mt-md"
+              :key="`data-div-${indexValue}`"
+              v-for="(cfValue, indexValue) in cf.values"
+            >
+              <q-input
+                filled=""
+                dense=""
+                style="width:20%"
+                v-model="cfValue.key"
+              /><span class="text-h5">:</span>
+              <q-input
+                style="width:65%"
+                filled=""
+                dense=""
+                v-model="cfValue.value"
+              />
+              <q-btn
+                flat=""
+                icon="delete"
+                @click="delParam(indexConfig, indexValue)"
+                >删除</q-btn
+              >
+            </div>
+          </template>
+          <template v-for="(cf, i) in config.features">
+            <q-item-label
+              class="bg-blue q-pa-xs text-white q-mt-md"
+              :key="`features-name-${i}`"
+              >{{ cf.name }}</q-item-label
+            >
+            <div class="row col-12 q-mt-md" :key="`features-div-${i}`">
+              <q-select
+                v-if="cf.limit === 1"
+                filled
+                v-model="cf.values"
+                label="Single"
+                :options="cf.options"
+                style="width: 250px"
+              />
 
-              <template v-slot:after>
-                <q-tab-panels
-                  v-model="selected"
-                  transition-prev="jump-up"
-                  transition-next="jump-up"
-                >
-                  <q-tab-panel name="default"></q-tab-panel>
-                  <q-tab-panel name="Food">
-                    <textarea
-                      style="width:100%;height: 600px"
-                      v-model="currentFile.code"
-                    ></textarea>
-                  </q-tab-panel>
-                </q-tab-panels>
-              </template>
-            </q-splitter>
-          </q-tab-panel>
-        </q-tab-panels>
+              <!-- <q-select
+                filled
+                v-model="multiple"
+                multiple
+                :options="options"
+                label="Multiple"
+                style="width: 250px"
+              /> -->
+              <!-- <q-input
+                style="width:65%"
+                filled=""
+                dense=""
+                v-model="cf.value"
+              />
+              <q-btn
+                flat=""
+                icon="delete"
+                @click="delParam(indexConfig, indexValue)"
+                >删除</q-btn
+              > -->
+            </div>
+          </template>
+        </q-card-section>
+        <q-card-actions align="center">
+          <q-btn color="green" icon="link" size="18px" @click="install()">
+            安装</q-btn
+          >
+        </q-card-actions>
+        <q-card-section :class="`text-red`">{{
+          installStatus.message
+        }}</q-card-section>
       </q-card>
     </template>
   </div>
@@ -192,6 +202,15 @@ export default {
     // }
     // this.getProjectFeatured();
     this.featureId = this.$route.params.featureId;
+    for (let i = 0; i < this.$store.state.installed.length; i++) {
+      this.installedLabels = Object.assign(
+        [],
+        this.$store.state.installed[i]["feature_labels"],
+        this.installedLabels
+      );
+    }
+    this.installed = this.$store.state.installed;
+    console.log("this.installed", this.$store.state.installed);
     this.getFeature();
   },
   watch: {
@@ -205,37 +224,61 @@ export default {
             "<br />"
           );
         }
+
         if (
           val.version &&
           val.version.feature_version_config &&
-          val.version.feature_version_config.data &&
           val.version.feature_version_id !== this.config.feature_version_id
         ) {
           this.config = {
             feature_version_id: val.version.feature_version_id,
-            data: []
+            data: [],
+            features: [],
+            dependencies: [],
+            components: []
           };
-          const baseConfig = val.version.feature_version_config.data;
-          const config = [];
+          if (val.version.feature_version_config.data) {
+            const baseConfigData = val.version.feature_version_config.data;
+            const config = [];
 
-          for (let i = 0; i < baseConfig.length; i++) {
-            const values = baseConfig[i].values;
-            config.push(baseConfig[i]);
-            for (let v = 0; v < values.length; v++) {
-              const value = JSON.stringify(baseConfig[i].values[v].value);
-              console.log("value", value);
-              config[i].values[v].value = value;
-              // const value = JSON.stringify(
-              //   values[v].value
-              //   //   config[i].values[v].value
-              // );
-              // config[i].values[v].value = JSON.stringify(value);
-              //   values[v].value
-              // );
+            for (let i = 0; i < baseConfigData.length; i++) {
+              const values = baseConfigData[i].values;
+              config.push(baseConfigData[i]);
+              for (let v = 0; v < values.length; v++) {
+                const value = JSON.stringify(baseConfigData[i].values[v].value);
+                console.log("value", value);
+                config[i].values[v].value = value;
+                // const value = JSON.stringify(
+                //   values[v].value
+                //   //   config[i].values[v].value
+                // );
+                // config[i].values[v].value = JSON.stringify(value);
+                //   values[v].value
+                // );
+              }
+            }
+            console.log("config", config);
+            this.config.data = config;
+          }
+          if (val.version.feature_version_config.features) {
+            this.config.features = val.version.feature_version_config.features;
+            for (let i = 0; i < this.config.features.length; i++) {
+              this.config.features[i].options = [];
+              for (let l = 0; l < this.installed.length; l++) {
+                if (
+                  this.config.features[i].type.indexOf(
+                    this.installed[l].project_features_type
+                  ) > -1
+                ) {
+                  this.config.features[i].options.push(this.installed[l]);
+                }
+              }
             }
           }
-          console.log("config", config);
-          this.config.data = config;
+          if (val.version.feature_version_config.dependencies) {
+            this.config.dependencies =
+              val.version.feature_version_config.dependencies;
+          }
         }
       }
     },
@@ -251,7 +294,8 @@ export default {
       loading: true,
       featureId: 0,
       error: "",
-      tab: "info",
+      installedLabels: [],
+      installed: [],
       versionIntro: "",
       form: {
         type: "",
@@ -334,7 +378,7 @@ export default {
       form.featureId = parseInt(self.featureId);
       form.projectId = parseInt(self.$store.state.currentProject.project_id);
       form.featureName = this.feature.feature_name;
-      form.featureOnBoot = this.feature.feature_onboot;
+      form.featureOnBoot = this.feature.feature_onboot ? true : false;
       form.version.feature_version_config.data = this.config.data;
       form.featureVersionConfigString = JSON.stringify(
         form.version.feature_version_config
