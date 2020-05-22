@@ -31,7 +31,7 @@ export default new Vuex.Store({
   state: {
     projects: {},
     currentProject: {},
-    installed: []
+    canUse: []
   },
   mutations: {
     updateProjects(state, value) {
@@ -41,9 +41,9 @@ export default new Vuex.Store({
       state.currentProject = value;
       console.log("updateCurrentProject", state.currentProject);
     },
-    updateInstalled(state, value) {
-      state.installed = value;
-      console.log("installed", state.installed);
+    updateCanUse(state, value) {
+      state.canUse = value;
+      console.log("canUse", state.canUse);
     }
   },
   actions: {},

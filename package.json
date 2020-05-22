@@ -14,7 +14,8 @@
   "dependencies": {
     "@quasar/extras": "^1.0.0",
     "quasar": "^1.0.0",
-    "vue-resource": "^1.5.1"
+    "vue-resource": "^1.5.1",
+    "vue-upload-component": "^2.8.20"
   },
   "devDependencies": {
     "@quasar/app": "^1.0.0",

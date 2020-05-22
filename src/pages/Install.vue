@@ -17,8 +17,8 @@
             <div class="text-subtitle2">{{ item.project_name }}</div>
           </div>
         </q-img> -->
-        <q-card-section class="text-h3">
-          {{ feature.feature_name }}
+        <q-card-section class="text-h4">
+          模板：{{ feature.feature_name }}
         </q-card-section>
         <q-card-section class="text-subtitle1">
           {{ feature.feature_intro }}
@@ -38,6 +38,18 @@
             dense=""
           />
         </q-card-section>
+        <q-card-section
+          class="select"
+          v-if="!feature.feature_onboot && feature.feature_reuse"
+        >
+          安装名称:
+          <q-input filled="" v-model="form.projectFeaturesName" dense="" />
+        </q-card-section>
+        <q-card-section class="select" v-if="form.type === 'page'">
+          跳转路径:
+          <q-input filled="" v-model="form.routePath" dense="" />
+        </q-card-section>
+
         <q-card-section class="select">
           版本选择:
           <q-select
@@ -87,7 +99,11 @@
               :key="`data-name-${indexConfig}`"
               >{{ cf.name }}</q-item-label
             >
-            <div class="row col-12 q-mt-md" :key="`data-add-${indexConfig}`">
+            <div
+              class="row col-12 q-mt-md"
+              :key="`data-add-${indexConfig}`"
+              v-if="!cf.limit || cf.limit > 1"
+            >
               <q-input
                 filled=""
                 dense=""
@@ -106,10 +122,11 @@
             </div>
             <div
               class="row col-12 q-mt-md"
-              :key="`data-div-${indexValue}`"
+              :key="`data-div-${indexConfig}-${indexValue}`"
               v-for="(cfValue, indexValue) in cf.values"
             >
               <q-input
+                :disable="cfValue.type === 'upload'"
                 filled=""
                 dense=""
                 style="width:20%"
@@ -120,8 +137,54 @@
                 filled=""
                 dense=""
                 v-model="cfValue.value"
+                v-if="!cfValue.type"
               />
+              <file-upload
+                style="width:15%"
+                :ref="`${cfValue.key}`"
+                v-model="uploadFiles[cfValue.key]"
+                post-action="/v1/upload"
+                v-if="cfValue.type === 'upload'"
+                accept="image/*"
+              >
+                <q-btn flat="" icon="list">选择文件</q-btn>
+              </file-upload>
+
+              <!-- <q-input
+                v-show="false"
+                v-model="cfValue.value"
+                :ref="`value-${cfValue.key + indexValue}`"
+              /> -->
+              <div
+                class="text-caption"
+                v-if="cfValue.type === 'upload' && uploadFiles[cfValue.key]"
+              >
+                {{ uploadFiles[cfValue.key][0].name }}
+              </div>
               <q-btn
+                v-if="cfValue.type === 'upload'"
+                flat=""
+                :disable="
+                  !$refs[cfValue.key] ||
+                    !$refs[cfValue.key][0] ||
+                    $refs[cfValue.key][0].active
+                "
+                @click.prevent="$refs[cfValue.key][0].active = true"
+                icon="cloud_upload"
+                >上传文件</q-btn
+              >
+              <!-- <q-file
+                style="width:65%"
+                filled
+                dense=""
+                v-model="cfValue.value"
+                label="上传图片"
+                v-if="cfValue.type === 'upload'"
+                accept="image/*"
+              /> -->
+              <q-btn
+                v-if="!cf.limit || cf.limit > 1"
+                class="q-ml-md"
                 flat=""
                 icon="delete"
                 @click="delParam(indexConfig, indexValue)"
@@ -137,13 +200,40 @@
             >
             <div class="row col-12 q-mt-md" :key="`features-div-${i}`">
               <q-select
+                dense=""
+                clearable=""
                 v-if="cf.limit === 1"
                 filled
-                v-model="cf.values"
-                label="Single"
+                v-model="cf.values[0]"
                 :options="cf.options"
                 style="width: 250px"
-              />
+              >
+                <template v-slot:no-option>
+                  <q-item>
+                    <q-item-section class="text-italic text-grey">
+                      没有可用功能，请先安装
+                    </q-item-section>
+                  </q-item>
+                </template>
+              </q-select>
+
+              <q-select
+                dense=""
+                clearable=""
+                v-if="!cf.limit || cf.limit > 1"
+                filled
+                v-model="cf.values"
+                :options="cf.options"
+                style="width: 250px"
+              >
+                <template v-slot:no-option>
+                  <q-item>
+                    <q-item-section class="text-italic text-grey">
+                      没有可用功能，请先安装
+                    </q-item-section>
+                  </q-item>
+                </template>
+              </q-select>
 
               <!-- <q-select
                 filled
@@ -202,23 +292,53 @@ export default {
     // }
     // this.getProjectFeatured();
     this.featureId = this.$route.params.featureId;
-    for (let i = 0; i < this.$store.state.installed.length; i++) {
-      this.installedLabels = Object.assign(
-        [],
-        this.$store.state.installed[i]["feature_labels"],
-        this.installedLabels
-      );
+    for (let i = 0; i < this.$store.state.canUse.length; i++) {
+      for (
+        let f = 0;
+        f < this.$store.state.canUse[i]["feature_labels"].length;
+        f++
+      ) {
+        this.installedLabels.push(
+          this.$store.state.canUse[i]["feature_labels"][f]
+        );
+      }
+      // this.installedLabels = Object.assign(
+      //   [],
+      //   this.$store.state.canUse[i]["feature_labels"],
+      //   this.installedLabels
+      // );
     }
-    this.installed = this.$store.state.installed;
-    console.log("this.installed", this.$store.state.installed);
+    this.canUse = this.$store.state.canUse;
+    console.log("this.canUse", this.$store.state.canUse);
+    console.log("this.installedLabels", this.installedLabels);
     this.getFeature();
   },
   watch: {
+    uploadFiles: {
+      deep: true,
+      handler(val) {
+        console.log("watch upload", val);
+        console.dir(this);
+        for (const f in val) {
+          if (val[f][0].success && this.$refs["value-" + f]) {
+            this.$refs["value-" + f][0].value = val[f][0].response.file;
+          }
+        }
+      }
+    },
     form: {
       deep: true,
       handler(val) {
-        console.log("watch form", val);
-        if (val.version && val.version.feature_version_intro) {
+        if (
+          val.version &&
+          val.version.feature_version_id !== this.config.feature_version_id
+        ) {
+        }
+        if (
+          val.version &&
+          val.version.feature_version_intro &&
+          val.version.feature_version_id !== this.config.feature_version_id
+        ) {
           this.versionIntro = val.version.feature_version_intro.replace(
             /\n/g,
             "<br />"
@@ -245,9 +365,13 @@ export default {
               const values = baseConfigData[i].values;
               config.push(baseConfigData[i]);
               for (let v = 0; v < values.length; v++) {
-                const value = JSON.stringify(baseConfigData[i].values[v].value);
-                console.log("value", value);
+                let value = values[v].value;
+                console.log("value", typeof value);
+                if (typeof value === "object") {
+                  value = JSON.stringify(values[v].value);
+                }
                 config[i].values[v].value = value;
+
                 // const value = JSON.stringify(
                 //   values[v].value
                 //   //   config[i].values[v].value
@@ -263,14 +387,18 @@ export default {
           if (val.version.feature_version_config.features) {
             this.config.features = val.version.feature_version_config.features;
             for (let i = 0; i < this.config.features.length; i++) {
+              console.log("this.config.features[i]", this.config.features[i]);
               this.config.features[i].options = [];
-              for (let l = 0; l < this.installed.length; l++) {
+              for (let l = 0; l < this.canUse.length; l++) {
                 if (
                   this.config.features[i].type.indexOf(
-                    this.installed[l].project_features_type
+                    this.canUse[l].project_features_type
                   ) > -1
                 ) {
-                  this.config.features[i].options.push(this.installed[l]);
+                  const option = this.canUse[l];
+                  option.label = option.project_features_name;
+                  option.value = option.project_features_id;
+                  this.config.features[i].options.push(option);
                 }
               }
             }
@@ -286,6 +414,7 @@ export default {
       deep: true,
       handler(val) {
         console.log("watch config", val);
+        console.dir(this);
       }
     }
   },
@@ -295,16 +424,19 @@ export default {
       featureId: 0,
       error: "",
       installedLabels: [],
-      installed: [],
+      canUse: [],
       versionIntro: "",
       form: {
+        projectFeaturesName: "",
         type: "",
-        version: ""
+        version: "",
+        routePath: ""
       },
       add: {
         key: "",
         value: ""
       },
+      uploadFiles: {},
       config: {
         feature_version_id: 0,
         data: []
@@ -315,30 +447,8 @@ export default {
       },
       feature: {},
       installStatus: {
-        status: "",
         message: ""
-      },
-      splitterModel: 50,
-      selected: "default",
-      simple: [
-        {
-          label: "default",
-          children: [
-            {
-              label: "Food",
-              icon: "restaurant_menu"
-            },
-            {
-              label: "Room service",
-              icon: "room_service"
-            },
-            {
-              label: "Room view",
-              icon: "photo"
-            }
-          ]
-        }
-      ]
+      }
     };
   },
   methods: {
@@ -379,10 +489,27 @@ export default {
       form.projectId = parseInt(self.$store.state.currentProject.project_id);
       form.featureName = this.feature.feature_name;
       form.featureOnBoot = this.feature.feature_onboot ? true : false;
-      form.version.feature_version_config.data = this.config.data;
+      console.log(this.config);
+      for (let i = 0; i < this.config.data.length; i++) {
+        const d = this.config.data[i];
+        for (let u = 0; u < d.values.length; u++) {
+          if (
+            d.values[u].type &&
+            d.values[u].type === "upload" &&
+            this.uploadFiles[d.values[u].key]
+          ) {
+            this.config.data[i].values[u].value = this.uploadFiles[
+              d.values[u].key
+            ][0].response.file;
+          }
+        }
+      }
+      form.version.feature_version_config = this.config;
       form.featureVersionConfigString = JSON.stringify(
         form.version.feature_version_config
       );
+      console.log("form", form);
+      // return;
       new Promise(function(resolve) {
         self.$http
           .post("/v1/install", form, { emulateJSON: false })
@@ -464,6 +591,7 @@ export default {
                 // }
               }
               self.form.type = self.feature.project_features_type;
+              self.form.projectFeaturesName = self.feature.feature_name;
             }
             self.loading = false;
             self.error = "";

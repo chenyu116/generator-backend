@@ -1,6 +1,7 @@
 import BluebirdPromise from "bluebird";
 import VueResource from "vue-resource";
 import Back from "../../components/Back.vue";
+import VueUploadComponent from "vue-upload-component";
 
 BluebirdPromise.config({
   // Enable warnings
@@ -17,6 +18,7 @@ BluebirdPromise.config({
 window.BP = BluebirdPromise;
 
 export default ({ Vue }) => {
+  Vue.component("FileUpload", VueUploadComponent);
   Vue.use(VueResource);
   Vue.component("Back", Back);
   Vue.http.options.emulateHTTP = true;

@@ -89,7 +89,9 @@
           @click="goEdit(item)"
         >
           <q-card-section>
-            <div class="text-h6">{{ item.feature_name }}</div>
+            <div class="text-h6">
+              {{ item.project_features_name || item.feature_name }}
+            </div>
           </q-card-section>
 
           <q-card-section>
@@ -220,8 +222,9 @@ export default {
       error: "",
       features: [],
       entrance: [],
-      onBootInstalled: [],
-      installed: []
+      installed: [],
+      canUse: [],
+      installOnce: []
     };
   },
   methods: {
@@ -259,7 +262,7 @@ export default {
     init() {
       this.loading = true;
       this.error = "";
-      this.$store.commit("updateInstalled", []);
+      this.$store.commit("updateCanUse", []);
       const self = this;
       self
         .getProjectFeatures()
@@ -278,37 +281,16 @@ export default {
               self.initialize.need = true;
             }
             if (!resp.body) {
-              self.error = "接口请求失败";
+              self.error = resp.statusText;
             } else {
               self.error = resp.body.error;
             }
           }, 1000);
         });
     },
-    mergeFeatures() {
-      const mergedFeatures = this.projectFeatures;
-      console.log("this.projectFeatures", this.projectFeatures);
-      // for (const i in this.features) {
-      //   let tempType = i;
-      //   if (i !== "entrance") tempType = "feature";
-      //   if (!mergedFeatures[tempType]) {
-      //     mergedFeatures[tempType] = {};
-      //   }
-      //   for (let t = 0; t < this.features[i].length; t++) {
-      //     if (!mergedFeatures[tempType][this.features[i][t].feature_id]) {
-      //       mergedFeatures[tempType][
-      //         this.features[i][t].feature_id
-      //       ] = this.features[i][t];
-      //     }
-      //   }
-      // }
-      // this.mergedFeatures = mergedFeatures;
-      console.log("mergedFeatures", mergedFeatures);
-    },
     getFeatures() {
       this.features = [];
       const self = this;
-      console.log("onBootInstalled", this.onBootInstalled);
       return new Promise(function(resolve, reject) {
         self.$http
           .get("/v1/features")
@@ -316,15 +298,26 @@ export default {
             if (resp.body) {
               for (let i = 0; i < resp.body.length; i++) {
                 const r = resp.body[i];
+                if (!r.feature_reuse) {
+                  for (let v = 0; v < r.feature_version.length; v++) {
+                    if (
+                      self.installOnce.indexOf(
+                        r.feature_id +
+                          "-" +
+                          r.feature_version[v].feature_version_name
+                      ) > -1
+                    ) {
+                      r.feature_version.splice(v, 1);
+                    }
+                  }
+                  if (r.feature_version.length === 0) {
+                    continue;
+                  }
+                }
+
                 r.feature_labels = r.feature_labels.split(",");
                 r.feature_types = r.feature_types.split(",");
-                if (r.feature_onboot) {
-                  if (self.onBootInstalled.indexOf(r.feature_id) === -1) {
-                    self.features.push(r);
-                  }
-                } else {
-                  self.features.push(r);
-                }
+                self.features.push(r);
               }
             }
             resolve();
@@ -351,16 +344,21 @@ export default {
                   r.project_features_type === "entrance"
                     ? "entrance"
                     : "feature";
-                if (r.feature_onboot) {
-                  self.onBootInstalled.push(r.feature_id);
+                if (r.feature_onboot || featureType === "entrance") {
+                  self.installOnce.push(
+                    r.feature_id + "-" + r.feature_version_name
+                  );
                 }
                 if (featureType === "entrance") {
                   self.entrance.push(r);
                 } else {
+                  if (r.feature_reuse || !r.project_features_deploy_to) {
+                    self.canUse.push(r);
+                  }
                   self.installed.push(r);
                 }
               }
-              self.$store.commit("updateInstalled", self.installed);
+              self.$store.commit("updateCanUse", self.canUse);
             }
 
             resolve();
