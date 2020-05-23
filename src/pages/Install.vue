@@ -126,7 +126,7 @@
               v-for="(cfValue, indexValue) in cf.values"
             >
               <q-input
-                :disable="cfValue.type === 'upload'"
+                disable=""
                 filled=""
                 dense=""
                 style="width:20%"
@@ -206,7 +206,7 @@
                 filled
                 v-model="cf.values[0]"
                 :options="cf.options"
-                style="width: 250px"
+                style="width: 400px"
               >
                 <template v-slot:no-option>
                   <q-item>
@@ -221,10 +221,11 @@
                 dense=""
                 clearable=""
                 v-if="!cf.limit || cf.limit > 1"
+                multiple=""
                 filled
                 v-model="cf.values"
                 :options="cf.options"
-                style="width: 250px"
+                style="width: 400px"
               >
                 <template v-slot:no-option>
                   <q-item>
@@ -489,19 +490,43 @@ export default {
       form.projectId = parseInt(self.$store.state.currentProject.project_id);
       form.featureName = this.feature.feature_name;
       form.featureOnBoot = this.feature.feature_onboot ? true : false;
-      console.log(this.config);
       for (let i = 0; i < this.config.data.length; i++) {
         const d = this.config.data[i];
         for (let u = 0; u < d.values.length; u++) {
           if (
             d.values[u].type &&
             d.values[u].type === "upload" &&
-            this.uploadFiles[d.values[u].key]
+            this.uploadFiles[d.values[u].key] &&
+            this.uploadFiles[d.values[u].key].length > 0
           ) {
+            console.log(
+              "this.uploadFiles[d.values[u].key]",
+              this.uploadFiles[d.values[u].key]
+            );
             this.config.data[i].values[u].value = this.uploadFiles[
               d.values[u].key
             ][0].response.file;
           }
+        }
+      }
+      for (let i = 0; i < this.config.features.length; i++) {
+        const d = this.config.features[i];
+        for (let u = 0; u < d.values.length; u++) {
+          if (
+            d.values[u].project_features_type &&
+            d.values[u].project_features_type === "page"
+          ) {
+            d.values[u]["key"] = "projectFeaturesRoutePath";
+            d.values[u]["type"] = d.values[u].project_features_type;
+            d.values[u]["value"] = d.values[u].project_features_route_path;
+          }
+          console.log(
+            "d.values[u].project_features_config",
+            d.values[u].project_features_config
+          );
+          // d.values[u].project_features_config = JSON.parse(
+          //   d.values[u].project_features_config
+          // );
         }
       }
       form.version.feature_version_config = this.config;
