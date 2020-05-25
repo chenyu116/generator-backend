@@ -344,7 +344,7 @@ export default {
                   r.project_features_type === "entrance"
                     ? "entrance"
                     : "feature";
-                if (r.feature_onboot || featureType === "entrance") {
+                if (r.feature_reuse === undefined) {
                   self.installOnce.push(
                     r.feature_id + "-" + r.feature_version_name
                   );
