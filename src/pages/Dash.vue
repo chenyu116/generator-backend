@@ -31,6 +31,14 @@
         <q-toolbar>
           <q-btn flat round dense icon="whatshot" />
           <q-toolbar-title>总览</q-toolbar-title>
+          <q-btn
+            icon="ballot"
+            @click="build()"
+            :disable="building"
+            :loading="building"
+          >
+            编译项目</q-btn
+          >
         </q-toolbar>
       </div>
       <template>
@@ -218,6 +226,7 @@ export default {
   data() {
     return {
       loading: false,
+      building: false,
       initialize: { processing: false, msg: "", need: false },
       error: "",
       features: [],
@@ -287,6 +296,48 @@ export default {
             }
           }, 1000);
         });
+    },
+    build() {
+      const self = this;
+      this.building = true;
+      return new Promise(function(resolve, reject) {
+        self.$http
+          .post("/v1/build", { projectId: parseInt(self.projectId) })
+          .then(function(resp) {
+            self.$q.notify({
+              message: "编译成功",
+              type: "positive",
+              position: "top",
+              multiLine: true,
+              timeout: 3000
+            });
+          })
+          .catch(function(resp) {
+            let message = resp.statusText;
+            if (resp.body && resp.body.error) {
+              message = resp.body.error;
+            }
+            self.$q.notify({
+              message: message,
+              type: "negative",
+              position: "top",
+              multiLine: true,
+              timeout: 0,
+              actions: [
+                {
+                  label: "关闭",
+                  color: "yellow",
+                  handler: () => {
+                    /* ... */
+                  }
+                }
+              ]
+            });
+          })
+          .finally(function() {
+            self.building = false;
+          });
+      });
     },
     getFeatures() {
       this.features = [];

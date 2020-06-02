@@ -116,6 +116,14 @@
                 style="width:65%"
                 filled=""
                 dense=""
+                disable=""
+                value="fromComponents"
+                v-if="cf.formType === 'fromComponents'"
+              />
+              <q-input
+                style="width:65%"
+                filled=""
+                dense=""
                 v-model="cf.value"
                 v-if="cf.formType === 'input'"
               />
@@ -442,11 +450,59 @@ export default {
       // form.featureName = this.feature.feature_name;
       // form.featureOnBoot = this.feature.feature_onboot ? true : false;
       // update upload file
+      for (let i = 0; i < this.config.components.length; i++) {
+        const d = this.config.components[i];
+        for (let u = 0; u < d.values.length; u++) {
+          console.log("d.values[u]", d.values[u]);
+          if (typeof d.values[u].project_features_config === "string") {
+            d.values[u].project_features_config = JSON.parse(
+              d.values[u].project_features_config
+            );
+          }
+        }
+      }
       if (this.config.data.values) {
         for (let i = 0; i < this.config.data.values.length; i++) {
           const d = this.config.data.values[i];
           if (d.formType === "upload" && this.uploadFiles[d.key]) {
             d.value = this.uploadFiles[d.key][0].response.file;
+          }
+          if (
+            d.formType === "fromComponents" &&
+            Array.isArray(this.config.components) &&
+            this.config.components.length > 0
+          ) {
+            console.log("this.config.components", this.config.components);
+            for (let u = 0; u < this.config.components.length; u++) {
+              const c = this.config.components[u];
+
+              if (c.key === d.key) {
+                for (let cv = 0; cv < c.values.length; cv++) {
+                  console.log(
+                    "c.values[cv].project_features_config.data",
+                    c.values[cv]
+                  );
+                  const cvf = c.values[cv].project_features_config.data.values;
+                  console.log("cvf", cvf);
+                  for (let cvv = 0; cvv < cvf.length; cvv++) {
+                    if (cvf[cvv].key == d.key) {
+                      let path = cvf[cvv].value;
+                      for (
+                        let nd = 0;
+                        nd < this.config.data.values.length;
+                        nd++
+                      ) {
+                        const ndv = this.config.data.values[nd];
+                        path = path.replace(":" + ndv.key, ndv.value);
+                      }
+                      d.value = path;
+                      break;
+                    }
+                  }
+                }
+                break;
+              }
+            }
           }
           // for (let u = 0; u < d.values.length; u++) {
           //   if (
@@ -466,21 +522,9 @@ export default {
           // }
         }
       }
-      for (let i = 0; i < this.config.components.length; i++) {
-        const d = this.config.components[i];
-        for (let u = 0; u < d.values.length; u++) {
-          console.log("d.values[u]", d.values[u]);
-          if (typeof d.values[u].project_features_config === "string") {
-            d.values[u].project_features_config = JSON.parse(
-              d.values[u].project_features_config
-            );
-          }
-        }
-      }
 
       form.version.feature_version_config = this.config;
       console.log("form", form);
-
       // return;
       new Promise(function(resolve) {
         self.$http
