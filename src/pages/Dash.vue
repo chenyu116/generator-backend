@@ -279,7 +279,6 @@ export default {
           return self.getFeatures();
         })
         .then(function() {
-          // self.mergeFeatures();
           self.error = "";
           self.loading = false;
         })
@@ -302,7 +301,11 @@ export default {
       this.building = true;
       return new Promise(function(resolve, reject) {
         self.$http
-          .post("/v1/build", { projectId: parseInt(self.projectId) })
+          .post(
+            "/v1/build",
+            { projectId: parseInt(self.projectId) },
+            { timeout: 300000 }
+          )
           .then(function(resp) {
             self.$q.notify({
               message: "编译成功",

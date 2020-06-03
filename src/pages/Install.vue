@@ -12,11 +12,6 @@
     </div>
     <template v-if="!loading && !error">
       <q-card class="my-card">
-        <!-- <q-img :src="item.project_content" height="260px">
-          <div class="absolute-bottom">
-            <div class="text-subtitle2">{{ item.project_name }}</div>
-          </div>
-        </q-img> -->
         <q-card-section class="text-h4">
           模板：{{ feature.feature_name }}
         </q-card-section>
@@ -90,7 +85,7 @@
           <q-item-label class="bg-blue q-pa-xs text-white">{{
             config.data.name || "相关参数"
           }}</q-item-label>
-          <!-- <div class="row col-12 q-mt-md">
+          <div v-if="form.version" class="row col-12 q-mt-md">
             <q-input
               filled=""
               dense=""
@@ -101,7 +96,7 @@
             <q-btn flat="" icon="add" @click="addData()" class="q-ml-md"
               >添加</q-btn
             >
-          </div> -->
+          </div>
           <template v-for="(cf, indexConfig) in config.data.values">
             <div class="row col-12 q-mt-md" :key="`data-div-${indexConfig}`">
               <q-input
@@ -138,11 +133,6 @@
                 <q-btn flat="" icon="list">选择文件</q-btn>
               </file-upload>
 
-              <!-- <q-input
-                v-show="false"
-                v-model="cfValue.value"
-                :ref="`value-${cfValue.key + indexValue}`"
-              /> -->
               <div
                 class="text-caption"
                 v-if="cf.formType === 'upload' && uploadFiles[cf.key]"
@@ -159,22 +149,13 @@
                 icon="cloud_upload"
                 >上传文件</q-btn
               >
-              <!-- <q-file
-                style="width:65%"
-                filled
-                dense=""
-                v-model="cfValue.value"
-                label="上传图片"
-                v-if="cfValue.type === 'upload'"
-                accept="image/*"
-              /> -->
-              <!-- <q-btn
-                class="q-ml-md"
+              <q-btn
                 flat=""
                 icon="delete"
+                class="q-ml-md"
                 @click="delData(indexConfig)"
                 >删除</q-btn
-              > -->
+              >
             </div>
           </template>
           <template v-for="(cf, i) in config.components">
@@ -234,13 +215,7 @@
                 filled=""
                 dense=""
                 v-model="cf.value"
-              />
-              <q-btn
-                flat=""
-                icon="delete"
-                @click="delParam(indexConfig, indexValue)"
-                >删除</q-btn
-              > -->
+              />-->
             </div>
           </template>
         </q-card-section>
@@ -427,6 +402,25 @@ export default {
   methods: {
     stringObject(obj) {
       return JSON.stringify(obj);
+    },
+    addData() {
+      console.log("this.config.data", this.config.data);
+      if (this.add.key && this.add.value) {
+        this.add.key = this.add.key.trim();
+        for (let i = 0; i < this.config.data.values.length; i++) {
+          const d = this.config.data.values[i];
+          if (d.key === this.add.key) {
+            alert("变量名已存在");
+            return;
+          }
+        }
+        const add = Object.assign(
+          { formType: "input", name: this.add.key },
+          this.add
+        );
+        this.config.data.values.push(add);
+        this.add = { key: "", value: "" };
+      }
     },
     delData(valueIndex) {
       if (!confirm("确定删除此配置？")) return;
