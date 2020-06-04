@@ -12,17 +12,11 @@
     </div>
     <template v-if="!loading && !error">
       <q-card class="my-card">
-        <q-card-section class="text-h4">
-          模板：{{ feature.feature_name }}
+        <q-card-section v-model="form.projectFeaturesName" class="text-h4">
+          功能编辑：{{ form.projectFeaturesName }}
         </q-card-section>
         <q-card-section class="text-subtitle1">
-          {{ feature.feature_intro }}
-        </q-card-section>
-        <q-card-section class="">
-          labels:
-          <q-chip v-for="(label, i) in feature.feature_labels" :key="i">{{
-            label
-          }}</q-chip>
+          模板说明：{{ feature.feature_intro }}
         </q-card-section>
         <q-card-section class="select">
           类型选择:
@@ -132,7 +126,14 @@
               >
                 <q-btn flat="" icon="list">选择文件</q-btn>
               </file-upload>
-
+              <div
+                v-if="
+                  cf.formType === 'upload' && !uploadFiles[cf.key] && cf.value
+                "
+                class="text-caption"
+              >
+                {{ cf.value }}
+              </div>
               <div
                 class="text-caption"
                 v-if="cf.formType === 'upload' && uploadFiles[cf.key]"
@@ -142,9 +143,6 @@
               <q-btn
                 v-if="cf.formType === 'upload'"
                 flat=""
-                :disable="
-                  !$refs[cf.key] || !$refs[cf.key][0] || $refs[cf.key][0].active
-                "
                 @click.prevent="$refs[cf.key][0].active = true"
                 icon="cloud_upload"
                 >上传文件</q-btn
@@ -234,58 +232,11 @@
 
 <script>
 export default {
-  name: "Package",
-  created() {
-    console.log(
-      "this.$store.state.currentProject.project_id",
-      this.$store.state.currentProject.project_id
-    );
-    console.log("this.$route.params.featureId", this.$route.params);
-    if (
-      !this.$store.state.currentProject.project_id ||
-      !this.$route.params.featureId
-    ) {
-      return this.$router.push("/");
-    }
-    // const projectId = parseInt(this.$route.params.id);
-    // console.log(project_id, this.$store.state.currentProject.project_id);
-    // if (
-    //   !projectId ||
-    //   projectId != this.$store.state.currentProject.project_id
-    // ) {
-    //   return this.$router.push("/");
-    // }
-    // this.getProjectFeatured();
-    this.featureId = this.$route.params.featureId;
-    for (let i = 0; i < this.$store.state.canUse.length; i++) {
-      for (
-        let f = 0;
-        f < this.$store.state.canUse[i]["feature_labels"].length;
-        f++
-      ) {
-        this.installedLabels.push(
-          this.$store.state.canUse[i]["feature_labels"][f]
-        );
-      }
-      // this.installedLabels = Object.assign(
-      //   [],
-      //   this.$store.state.canUse[i]["feature_labels"],
-      //   this.installedLabels
-      // );
-    }
-    this.canUse = this.$store.state.canUse;
-    console.log("this.canUse", this.$store.state.canUse);
-    console.log("this.installedLabels", this.installedLabels);
-    const path = "\/details\/:id";
-    console.log("path", path);
-    this.getFeature();
-  },
   watch: {
     uploadFiles: {
       deep: true,
       handler(val) {
-        console.log("watch upload", val);
-        console.dir(this);
+        console.log("watch uploadFiles", val);
         for (const f in val) {
           if (val[f][0].success && this.$refs["value-" + f]) {
             this.$refs["value-" + f][0].value = val[f][0].response.file;
@@ -306,10 +257,35 @@ export default {
               "<br />"
             );
           }
-
+          const projectFeaturesConfig = JSON.parse(
+            this.$store.state.editFeature.project_features_config
+          );
           if (val.version.feature_version_config) {
             this.config = val.version.feature_version_config;
-            this.config.feature_version_id = val.version.feature_version_id;
+            if (Array.isArray(this.config.data.values)) {
+              for (let i = 0; i < this.config.data.values.length; i++) {
+                const v = this.config.data.values[i];
+                for (
+                  let p = 0;
+                  p < projectFeaturesConfig.data.values.length;
+                  p++
+                ) {
+                  const vp = projectFeaturesConfig.data.values[p];
+                  if (v.key === vp.key) {
+                    switch (v.formType) {
+                      case "input":
+                        v.value = vp.value;
+                        break;
+                      case "upload":
+                        v.oldValue = vp.value;
+                        v.value = vp.value;
+                        break;
+                    }
+                    break;
+                  }
+                }
+              }
+            }
             // this.config = {
             //   feature_version_id: val.version.feature_version_id,
             //   data: [],
@@ -319,31 +295,13 @@ export default {
             // if (val.version.feature_version_config.data) {
             //   this.config.data = val.version.feature_version_config.data;
             // }
+            console.log("this.config.components", this.config.components);
+            console.log("projectFeaturesConfig", projectFeaturesConfig);
             if (this.config.components) {
               for (let i = 0; i < this.config.components.length; i++) {
                 const d = this.config.components[i];
                 d.options = [];
-                console.log(
-                  "this.config.components[i].project_features_install_name",
-                  this.config.components[i].project_features_install_name
-                );
-                console.log("d.values", d.values);
-                if (d.values) {
-                  for (let u = 0; u < d.values.length; u++) {
-                    const du = d.values[u];
-                    du.componentHash = "";
-                    if (du.project_features_install_name) {
-                      const installNameSplit = du.project_features_install_name.split(
-                        "-"
-                      );
-                      if (installNameSplit.length > 3) {
-                        du.componentHash = "C" + installNameSplit[3];
-                      }
-                    }
-                  }
-                }
                 for (let l = 0; l < this.canUse.length; l++) {
-                  console.log("console.log(this.canUse[l]);", this.canUse[l]);
                   if (
                     d.accept.indexOf(this.canUse[l].project_features_type) > -1
                   ) {
@@ -351,6 +309,26 @@ export default {
                     option.label = option.project_features_name;
                     option.value = option.project_features_id;
                     d.options.push(option);
+                  }
+                }
+                for (
+                  let p = 0;
+                  p < projectFeaturesConfig.components.length;
+                  p++
+                ) {
+                  const vp = projectFeaturesConfig.components[p];
+                  if (d.key === vp.key) {
+                    for (let l = 0; l < d.options.length; l++) {
+                      for (let sl = 0; sl < vp.values.length; sl++) {
+                        if (
+                          d.options[l].project_features_id ===
+                          vp.values[sl].project_features_id
+                        ) {
+                          d.values.push(d.options[l]);
+                        }
+                      }
+                    }
+                    break;
                   }
                 }
               }
@@ -403,6 +381,42 @@ export default {
       }
     };
   },
+  beforeDestroy() {
+    this.$store.commit("updateEditFeature", null);
+  },
+  mounted() {
+    if (
+      !this.$store.state.currentProject.project_id ||
+      !this.$store.state.editFeature
+    ) {
+      return this.$router.push("/");
+    }
+    for (let i = 0; i < this.$store.state.canUse.length; i++) {
+      for (
+        let f = 0;
+        f < this.$store.state.canUse[i]["feature_labels"].length;
+        f++
+      ) {
+        this.installedLabels.push(
+          this.$store.state.canUse[i]["feature_labels"][f]
+        );
+      }
+    }
+    this.canUse = this.$store.state.canUse;
+    console.log("this.canUse", this.$store.state.canUse);
+    console.log("this.$store.state.editFeature", this.$store.state.editFeature);
+    this.featureId = this.$store.state.editFeature.feature_id;
+    // const config = JSON.parse(this.feature.project_features_config);
+    // for (let i = 0; i < config.data.values.length; i++) {
+    //   const v = config.data.values[i];
+    //   if (v.formType === "upload") {
+    //     this.uploadFiles[v.key] = [{ name: v.value }];
+    //   }
+    // }
+    // this.config = config;
+    // console.log("edit this.config", this.config);
+    this.getFeature();
+  },
   methods: {
     stringObject(obj) {
       return JSON.stringify(obj);
@@ -451,7 +465,6 @@ export default {
       for (let i = 0; i < this.config.components.length; i++) {
         const d = this.config.components[i];
         for (let u = 0; u < d.values.length; u++) {
-          console.log("d.values[u]", d.values[u]);
           if (typeof d.values[u].project_features_config === "string") {
             d.values[u].project_features_config = JSON.parse(
               d.values[u].project_features_config
@@ -464,6 +477,12 @@ export default {
           const d = this.config.data.values[i];
           if (d.formType === "upload" && this.uploadFiles[d.key]) {
             d.value = this.uploadFiles[d.key][0].response.file;
+            if (!d.value && d.oldValue) {
+              d.value = d.oldValue;
+            }
+          }
+          if (d.oldValue) {
+            delete d.oldValue;
           }
           if (
             d.formType === "fromComponents" &&
@@ -528,7 +547,7 @@ export default {
         self.$http
           .post("/v1/install", form)
           .then(function(resp) {
-            resolve();
+            console.log(resp);
             // if (resp.body) {
             //   self.feature = resp.body;
             //   self.feature.feature_types = self.feature.feature_types.split(
@@ -562,10 +581,6 @@ export default {
             //   }
             // }, 1000);
           });
-      }).then(function() {
-        self.$router.push(
-          "/dash/" + self.$store.state.currentProject.project_id
-        );
       });
     },
     getFeature() {
@@ -592,37 +607,40 @@ export default {
               self.feature.feature_labels = self.feature.feature_labels.split(
                 ","
               );
+              let selectVersion = {};
               for (let i = 0; i < self.feature.feature_version.length; i++) {
                 self.feature.feature_version[
                   i
                 ].feature_version_config = JSON.parse(
                   self.feature.feature_version[i].feature_version_config
                 );
+                self.feature.feature_version[
+                  i
+                ].feature_version_config.feature_version_id =
+                  self.feature.feature_version[i].feature_version_id;
                 self.feature.feature_version[i].label =
                   self.feature.feature_version[i].feature_version_name;
                 self.feature.feature_version[i].value =
                   self.feature.feature_version[i].feature_version_id;
-                // if (
-                //   self.feature.project_features_config &&
-                //   self.feature.feature_version_id &&
-                //   self.feature.feature_version_id ===
-                //     self.feature.feature_version[i].feature_version_id
-                // ) {
-                //   self.form.version = self.feature.feature_version[i];
-                //   self.form.version.feature_version_config = JSON.parse(
-                //     self.feature.project_features_config
-                //   );
-                // }
+                if (
+                  self.$store.state.editFeature.feature_version_id ===
+                  self.feature.feature_version[i].feature_version_id
+                ) {
+                  selectVersion = self.feature.feature_version[i];
+                }
               }
-              self.form.type = self.feature.project_features_type;
-              self.form.projectFeaturesName = self.feature.feature_reuse
-                ? ""
-                : self.feature.feature_name;
+              self.form.type =
+                self.$store.state.editFeature.project_features_type;
+              self.form.projectFeaturesName =
+                self.$store.state.editFeature.project_features_name;
+
+              self.form.version = selectVersion;
             }
 
             self.loading = false;
             self.error = "";
             console.log("self.feature", self.feature);
+            resolve();
           })
           .catch(function(resp) {
             console.log("catch", resp);

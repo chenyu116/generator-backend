@@ -52,7 +52,6 @@
           class="my-card"
           v-for="(item, index) in entrance"
           :key="`entrance-${index}`"
-          @click="goEdit(item)"
         >
           <q-card-section>
             <div class="text-h6">{{ item.feature_name }}</div>
@@ -79,7 +78,7 @@
           <q-separator />
 
           <q-card-actions align="right">
-            <q-btn flat icon="edit"> 配置</q-btn>
+            <q-btn flat icon="edit" @click="goEdit(item)"> 配置</q-btn>
           </q-card-actions>
         </q-card>
       </template>
@@ -91,10 +90,9 @@
           </q-toolbar-title>
         </q-toolbar>
         <q-card
-          class="my-card"
+          class="my-card bg-green-1"
           v-for="(item, index) in installed"
           :key="`installed-${index}`"
-          @click="goEdit(item)"
         >
           <q-card-section>
             <div class="text-h6">
@@ -126,7 +124,7 @@
 
           <q-card-actions align="right">
             <template v-if="item.project_features_id">
-              <q-btn flat icon="edit"> 配置</q-btn>
+              <q-btn flat icon="edit" @click="goEdit(item)"> 配置</q-btn>
             </template>
           </q-card-actions>
         </q-card>
@@ -141,7 +139,6 @@
         class="my-card"
         v-for="(item, index) in features"
         :key="`features-${index}`"
-        @click="goEdit(item)"
       >
         <q-card-section>
           <div class="text-h6">{{ item.feature_name }}</div>
@@ -311,7 +308,6 @@ export default {
               message: "编译成功",
               type: "positive",
               position: "top",
-              multiLine: true,
               timeout: 3000
             });
           })
@@ -422,7 +418,10 @@ export default {
           });
       });
     },
-    goEdit(item) {}
+    goEdit(item) {
+      this.$store.commit("updateEditFeature", item);
+      this.$router.push("/edit");
+    }
   }
 };
 </script>

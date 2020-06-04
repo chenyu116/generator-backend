@@ -1,13 +1,23 @@
+import MainLayout from "layouts/MainLayout.vue";
+import Index from "pages/Index.vue";
+import Dash from "pages/Dash.vue";
+import Install from "pages/Install.vue";
+import Edit from "pages/Edit.vue";
+import Error404 from "pages/Error404.vue";
 const routes = [
   {
     path: "/",
-    component: () => import("layouts/MainLayout.vue"),
+    component: MainLayout,
     children: [
-      { path: "/", component: () => import("pages/Index.vue") },
-      { path: "/dash/:id", component: () => import("pages/Dash.vue") },
+      { path: "/", component: Index },
+      { path: "/dash/:id", component: Dash },
       {
         path: "/install/:featureId",
-        component: () => import("pages/Install.vue")
+        component: Install
+      },
+      {
+        path: "/edit",
+        component: Edit
       }
     ]
   }
@@ -17,7 +27,7 @@ const routes = [
 if (process.env.MODE !== "ssr") {
   routes.push({
     path: "*",
-    component: () => import("pages/Error404.vue")
+    component: Error404
   });
 }
 

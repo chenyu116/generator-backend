@@ -31,7 +31,8 @@ export default new Vuex.Store({
   state: {
     projects: {},
     currentProject: {},
-    canUse: []
+    canUse: [],
+    editFeature: null
   },
   mutations: {
     updateProjects(state, value) {
@@ -44,6 +45,10 @@ export default new Vuex.Store({
     updateCanUse(state, value) {
       state.canUse = value;
       console.log("canUse", state.canUse);
+    },
+    updateEditFeature(state, value) {
+      state.editFeature = value;
+      console.log("editFeature", state.editFeature);
     }
   },
   actions: {},
