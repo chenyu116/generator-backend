@@ -298,7 +298,7 @@ export default {
       this.building = true;
       return new Promise(function(resolve, reject) {
         self.$http
-          .post(
+          .put(
             "/v1/build",
             { projectId: parseInt(self.projectId) },
             { timeout: 300000 }

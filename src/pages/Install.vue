@@ -201,26 +201,18 @@
                   </q-item>
                 </template>
               </q-select>
-
-              <!-- <q-select
-                filled
-                v-model="multiple"
-                multiple
-                :options="options"
-                label="Multiple"
-                style="width: 250px"
-              /> -->
-              <!-- <q-input
-                style="width:65%"
-                filled=""
-                dense=""
-                v-model="cf.value"
-              />-->
             </div>
           </template>
         </q-card-section>
         <q-card-actions align="center">
-          <q-btn color="green" icon="link" size="18px" @click="install()">
+          <q-btn
+            color="green"
+            icon="link"
+            size="18px"
+            :disable="installing"
+            :loading="installing"
+            @click="install()"
+          >
             安装</q-btn
           >
         </q-card-actions>
@@ -235,7 +227,7 @@
 <script>
 export default {
   name: "Package",
-  created() {
+  mounted() {
     console.log(
       "this.$store.state.currentProject.project_id",
       this.$store.state.currentProject.project_id
@@ -373,6 +365,7 @@ export default {
   },
   data() {
     return {
+      installing: false,
       loading: true,
       featureId: 0,
       error: "",
@@ -441,6 +434,7 @@ export default {
         alert("请选择版本");
         return;
       }
+      this.installing = true;
       const form = Object.assign({}, this.form);
       const self = this;
       form.featureId = parseInt(self.featureId);
@@ -523,10 +517,10 @@ export default {
 
       form.version.feature_version_config = this.config;
       console.log("form", form);
-      return;
-      new Promise(function(resolve) {
+      // return;
+      new Promise(function(resolve, reject) {
         self.$http
-          .post("/v1/install", form)
+          .put("/v1/install", form)
           .then(function(resp) {
             resolve();
             // if (resp.body) {
@@ -555,17 +549,43 @@ export default {
           .catch(function(resp) {
             console.log("catch", resp);
             // setTimeout(function() {
-            //   if (!resp.body) {
-            //     self.error = "接口请求失败";
-            //   } else {
-            //     self.error = resp.body.error;
-            //   }
+            if (!resp.body) {
+              self.error = "安装失败";
+            } else {
+              self.error = resp.body.error;
+            }
+            self.$q.notify({
+              message: self.error,
+              type: "negative",
+              position: "top",
+              multiLine: true,
+              timeout: 0,
+              actions: [
+                {
+                  label: "关闭",
+                  color: "yellow",
+                  handler: () => {
+                    /* ... */
+                  }
+                }
+              ]
+            });
+            self.installing = false;
+            reject();
             // }, 1000);
           });
       }).then(function() {
-        self.$router.push(
-          "/dash/" + self.$store.state.currentProject.project_id
-        );
+        self.$q.notify({
+          message: "安装成功",
+          type: "positive",
+          position: "top",
+          timeout: 2000
+        });
+        setTimeout(() => {
+          self.$router.push(
+            "/dash/" + self.$store.state.currentProject.project_id
+          );
+        }, 2000);
       });
     },
     getFeature() {

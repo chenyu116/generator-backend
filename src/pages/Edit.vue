@@ -218,8 +218,15 @@
           </template>
         </q-card-section>
         <q-card-actions align="center">
-          <q-btn color="green" icon="link" size="18px" @click="install()">
-            安装</q-btn
+          <q-btn
+            color="green"
+            icon="link"
+            size="18px"
+            :disable="editing"
+            :loading="editing"
+            @click="edit()"
+          >
+            编辑</q-btn
           >
         </q-card-actions>
         <q-card-section :class="`text-red`">{{
@@ -311,6 +318,7 @@ export default {
                     d.options.push(option);
                   }
                 }
+
                 for (
                   let p = 0;
                   p < projectFeaturesConfig.components.length;
@@ -318,13 +326,15 @@ export default {
                 ) {
                   const vp = projectFeaturesConfig.components[p];
                   if (d.key === vp.key) {
-                    for (let l = 0; l < d.options.length; l++) {
-                      for (let sl = 0; sl < vp.values.length; sl++) {
+                    console.log("vp.values", vp.values);
+                    for (let sl = 0; sl < vp.values.length; sl++) {
+                      for (let l = 0; l < d.options.length; l++) {
                         if (
                           d.options[l].project_features_id ===
                           vp.values[sl].project_features_id
                         ) {
                           d.values.push(d.options[l]);
+                          break;
                         }
                       }
                     }
@@ -351,6 +361,7 @@ export default {
   },
   data() {
     return {
+      editing: false,
       loading: true,
       featureId: 0,
       error: "",
@@ -446,7 +457,7 @@ export default {
         this.config.data.values.splice(valueIndex, 1);
       }
     },
-    install() {
+    edit() {
       if (!this.form.type) {
         alert("请选择类型");
         return;
@@ -455,9 +466,12 @@ export default {
         alert("请选择版本");
         return;
       }
+      this.editing = true;
       const form = Object.assign({}, this.form);
       const self = this;
-      form.featureId = parseInt(self.featureId);
+      form.projectFeaturesId = parseInt(
+        this.$store.state.editFeature.project_features_id
+      );
       form.projectId = parseInt(self.$store.state.currentProject.project_id);
       // form.featureName = this.feature.feature_name;
       // form.featureOnBoot = this.feature.feature_onboot ? true : false;
@@ -495,12 +509,7 @@ export default {
 
               if (c.key === d.key) {
                 for (let cv = 0; cv < c.values.length; cv++) {
-                  console.log(
-                    "c.values[cv].project_features_config.data",
-                    c.values[cv]
-                  );
                   const cvf = c.values[cv].project_features_config.data.values;
-                  console.log("cvf", cvf);
                   for (let cvv = 0; cvv < cvf.length; cvv++) {
                     if (cvf[cvv].key == d.key) {
                       let path = cvf[cvv].value;
@@ -542,12 +551,13 @@ export default {
 
       form.version.feature_version_config = this.config;
       console.log("form", form);
-      return;
-      new Promise(function(resolve) {
+      // return;
+      new Promise(function(resolve, reject) {
         self.$http
-          .post("/v1/install", form)
+          .post("/v1/edit", form)
           .then(function(resp) {
             console.log(resp);
+            resolve();
             // if (resp.body) {
             //   self.feature = resp.body;
             //   self.feature.feature_types = self.feature.feature_types.split(
@@ -573,14 +583,42 @@ export default {
           })
           .catch(function(resp) {
             console.log("catch", resp);
-            // setTimeout(function() {
-            //   if (!resp.body) {
-            //     self.error = "接口请求失败";
-            //   } else {
-            //     self.error = resp.body.error;
-            //   }
-            // }, 1000);
+            if (!resp.body) {
+              self.error = "更新失败";
+            } else {
+              self.error = resp.body.error;
+            }
+            self.$q.notify({
+              message: self.error,
+              type: "negative",
+              position: "top",
+              multiLine: true,
+              timeout: 0,
+              actions: [
+                {
+                  label: "关闭",
+                  color: "yellow",
+                  handler: () => {
+                    /* ... */
+                  }
+                }
+              ]
+            });
+            self.editing = false;
+            reject();
           });
+      }).then(function() {
+        self.$q.notify({
+          message: "更新成功",
+          type: "positive",
+          position: "top",
+          timeout: 2000
+        });
+        setTimeout(() => {
+          self.$router.push(
+            "/dash/" + self.$store.state.currentProject.project_id
+          );
+        }, 2000);
       });
     },
     getFeature() {

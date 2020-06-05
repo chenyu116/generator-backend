@@ -21,6 +21,6 @@ export default ({ Vue }) => {
   Vue.component("FileUpload", VueUploadComponent);
   Vue.use(VueResource);
   Vue.component("Back", Back);
-  Vue.http.options.emulateHTTP = true;
+  // Vue.http.options.emulateHTTP = true;
   Vue.http.options.timeout = 10000;
 };
