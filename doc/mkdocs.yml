@@ -1,0 +1,25 @@
+site_name: 移动端生成工具使用文档
+site_author: Roger
+dev_addr: "192.168.1.232:8081"
+nav:
+  - 项目地址: index.md
+  - 使用说明:
+      - 创建项目: src/create.md
+      - 界面说明: src/intro.md
+      - components:
+          - Init.vue: src/components/Init.vue.md
+      - plugins:
+          - vuetify.js: src/plugins/vuetify.js.md
+          - confirm: src/plugins/confirm.md
+      - store: src/store.md
+      - views:
+          - Home.vue: src/views/Home.vue.md
+
+theme:
+  name: "material"
+markdown_extensions:
+  - smarty
+  - toc:
+      permalink: True
+  - sane_lists
+copyright: "version: 1.0"
