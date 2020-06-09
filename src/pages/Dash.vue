@@ -31,13 +31,20 @@
         <q-toolbar>
           <q-btn flat round dense icon="whatshot" />
           <q-toolbar-title>总览</q-toolbar-title>
+          <q-space />
+          <q-item-label class="q-mr-xl text-h6"
+            ><a href="http://gm.signp.cn/projects/146/dist/spa/" target="_blank"
+              >预览</a
+            ></q-item-label
+          >
           <q-btn
             icon="ballot"
-            @click="build()"
             :disable="building"
             :loading="building"
+            color="indigo"
+            to="/generate"
           >
-            编译项目</q-btn
+            编译 & 部署</q-btn
           >
         </q-toolbar>
       </div>
@@ -421,6 +428,10 @@ export default {
     goEdit(item) {
       this.$store.commit("updateEditFeature", item);
       this.$router.push("/edit");
+    },
+    deploy() {
+      if (confirm("确定部署项目？")) {
+      }
     }
   }
 };

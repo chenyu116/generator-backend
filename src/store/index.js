@@ -32,7 +32,12 @@ export default new Vuex.Store({
     projects: {},
     currentProject: {},
     canUse: [],
-    editFeature: null
+    editFeature: null,
+    socket: {
+      isConnected: false,
+      message: "",
+      reconnectError: false
+    }
   },
   mutations: {
     updateProjects(state, value) {
@@ -49,8 +54,24 @@ export default new Vuex.Store({
     updateEditFeature(state, value) {
       state.editFeature = value;
       console.log("editFeature", state.editFeature);
+    },
+    SOCKET_ONOPEN(state, event) {
+      Vue.prototype.$socket = event.currentTarget;
+      state.socket.isConnected = true;
+      console.log("SOCKET_ONOPEN");
+    },
+    SOCKET_ONCLOSE(state, event) {
+      state.socket.isConnected = false;
+      console.log("SOCKET_ONCLOSE");
+    },
+    SOCKET_ONMESSAGE(state, message) {
+      state.socket.message = message;
     }
   },
-  actions: {},
+  actions: {
+    sendMessage: function(context, message) {
+      Vue.prototype.$socket.send(message);
+    }
+  },
   modules: {}
 });
