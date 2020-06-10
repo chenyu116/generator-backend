@@ -4,30 +4,29 @@
     <div class="col-12">
       <q-toolbar>
         <q-btn flat round dense icon="whatshot" />
-        <q-toolbar-title>编译 & 部署</q-toolbar-title>
+        <q-toolbar-title>生成 & 部署</q-toolbar-title>
         <q-space />
         <q-btn
           icon="ballot"
           @click="build()"
-          :disable="building"
+          :disable="building || deploying"
           :loading="building"
           color="indigo"
         >
-          编译项目</q-btn
+          生成项目</q-btn
         >
         <q-btn
           icon="cloud_upload"
           @click="deploy()"
-          :disable="building"
-          :loading="building"
+          :disable="building || deploying"
+          :loading="deploying"
           color="blue"
           class="q-ml-xl"
         >
           部署项目</q-btn
         >
       </q-toolbar>
-      <div class="q-pa-md" style="height:600px">
-        <q-scroll-observer @scroll="scrollHandler" />
+      <div style="height:600px">
         <q-input
           ref="buildText"
           v-model="message"
@@ -42,25 +41,26 @@
 </template>
 
 <script>
+import { copyToClipboard } from "quasar";
 export default {
+  beforeDestroy() {
+    if (typeof this.dismiss === "function") {
+      this.dismiss();
+    }
+  },
   mounted() {
     if (!this.$store.state.currentProject.project_id) {
       return this.$router.push("/");
     }
-    this.projectId = this.$store.state.currentProject.project_id;
   },
   data() {
     const self = this;
     return {
-      loading: false,
+      dismiss: null,
+      deploying: false,
       building: false,
-      initialize: { processing: false, msg: "", need: false },
       message: "",
-      features: [],
-      entrance: [],
-      installed: [],
-      canUse: [],
-      projectId: null
+      projectId: self.$store.state.currentProject.project_id
     };
   },
   computed: {
@@ -71,6 +71,10 @@ export default {
   watch: {
     socketMsg(val) {
       if (val.data) {
+        if (val.data === "clear") {
+          this.message = "";
+          return;
+        }
         const buildText = this.$refs.buildText.$el.firstChild.firstChild
           .lastChild.lastChild;
 
@@ -81,12 +85,10 @@ export default {
     }
   },
   methods: {
-    scrollHandler(e) {
-      console.log("e", e);
-    },
     build() {
       const self = this;
       this.building = true;
+      this.message = "";
       return new Promise(function(resolve, reject) {
         self.$http
           .put(
@@ -107,7 +109,7 @@ export default {
             if (resp.body && resp.body.error) {
               message = resp.body.error;
             }
-            self.$q.notify({
+            self.dismiss = self.$q.notify({
               message: message,
               type: "negative",
               position: "top",
@@ -132,98 +134,94 @@ export default {
           });
       });
     },
-    getFeatures() {
-      this.features = [];
-      const self = this;
-      return new Promise(function(resolve, reject) {
-        self.$http
-          .get("/v1/features")
-          .then(function(resp) {
-            if (resp.body) {
-              for (let i = 0; i < resp.body.length; i++) {
-                const r = resp.body[i];
-                if (!r.feature_reuse) {
-                  for (let v = 0; v < r.feature_version.length; v++) {
-                    if (
-                      self.installOnce.indexOf(
-                        r.feature_id +
-                          "-" +
-                          r.feature_version[v].feature_version_name
-                      ) > -1
-                    ) {
-                      r.feature_version.splice(v, 1);
-                    }
-                  }
-                  if (r.feature_version.length === 0) {
-                    continue;
-                  }
-                }
-
-                r.feature_labels = r.feature_labels.split(",");
-                r.feature_types = r.feature_types.split(",");
-                self.features.push(r);
-              }
-            }
-            resolve();
-          })
-          .catch(function(resp) {
-            reject(resp);
-          });
-      });
-    },
-    getProjectFeatures() {
-      const self = this;
-      return new Promise(function(resolve, reject) {
-        self.$http
-          .get("/v1/project/features", {
-            params: { projectId: self.projectId }
-          })
-          .then(function(resp) {
-            if (resp.body) {
-              for (let i = 0; i < resp.body.length; i++) {
-                const r = resp.body[i];
-                r.feature_labels = r.feature_labels.split(",");
-                r.feature_types = r.feature_types.split(",");
-                const featureType =
-                  r.project_features_type === "entrance"
-                    ? "entrance"
-                    : "feature";
-                if (r.feature_reuse === undefined) {
-                  self.installOnce.push(
-                    r.feature_id + "-" + r.feature_version_name
-                  );
-                }
-                if (featureType === "entrance") {
-                  self.entrance.push(r);
-                } else {
-                  if (r.feature_reuse || !r.project_features_deploy_to) {
-                    self.canUse.push(r);
-                  }
-                  self.installed.push(r);
-                }
-              }
-              self.$store.commit("updateCanUse", self.canUse);
-            }
-
-            resolve();
-          })
-          .catch(function(resp) {
-            reject(resp);
-          });
-      });
-    },
-    goEdit(item) {
-      this.$store.commit("updateEditFeature", item);
-      this.$router.push("/edit");
-    },
     deploy() {
       if (confirm("确定部署项目？")) {
+        this.deploying = true;
+        const self = this;
+        this.deploying = true;
+        this.message = "";
+        return new Promise(function(resolve, reject) {
+          self.$http
+            .put(
+              "/v1/deploy",
+              { projectId: parseInt(self.projectId) },
+              { timeout: 3000000 }
+            )
+            .then(function(resp) {
+              self.dismiss = self.$q.notify({
+                message:
+                  "资源部署成功，为避免安全问题，请复制输入框中内容，在后台手动更新项目移动端主题",
+                type: "info",
+                multiLine: true,
+                textColor: "black",
+                position: "top",
+                timeout: 0,
+                actions: [
+                  {
+                    label: "复制",
+                    color: "red",
+                    handler: () => {
+                      console.log("copy", self.message);
+                      copyToClipboard(self.message)
+                        .then(() => {
+                          self.$q.notify({
+                            message: "已复制",
+                            type: "info",
+                            textColor: "black",
+                            position: "top",
+                            timeout: 3000
+                          });
+                          // success!
+                        })
+                        .catch(() => {
+                          self.$q.notify({
+                            message: "复制失败，请手动复制",
+                            type: "negative",
+                            textColor: "black",
+                            position: "top",
+                            timeout: 3000
+                          });
+                        });
+                    }
+                  },
+                  {
+                    label: "关闭",
+                    color: "yellow",
+                    handler: () => {
+                      /* ... */
+                    }
+                  }
+                ]
+              });
+            })
+            .catch(function(resp) {
+              let message = resp.statusText;
+              if (resp.body && resp.body.error) {
+                message = resp.body.error;
+              }
+              self.dismiss = self.$q.notify({
+                message: message,
+                type: "negative",
+                position: "top",
+                multiLine: true,
+                timeout: 0,
+                actions: [
+                  {
+                    label: "关闭",
+                    color: "yellow",
+                    handler: () => {
+                      /* ... */
+                    }
+                  }
+                ]
+              });
+            })
+            .finally(function() {
+              self.deploying = false;
+            });
+        });
       }
     }
   }
 };
 </script>
-<style lang="sass" scoped>
-.my-card
-  width: 220px
-</style>

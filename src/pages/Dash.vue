@@ -32,12 +32,11 @@
           <q-btn flat round dense icon="whatshot" />
           <q-toolbar-title>总览</q-toolbar-title>
           <q-space />
-          <q-item-label class="q-mr-xl text-h6"
-            ><a href="http://gm.signp.cn/projects/146/dist/spa/" target="_blank"
-              >预览</a
-            ></q-item-label
+          <q-btn icon="play_circle_outline" color="indigo" to="/preview">
+            预览</q-btn
           >
           <q-btn
+            class="q-ml-md"
             icon="ballot"
             :disable="building"
             :loading="building"

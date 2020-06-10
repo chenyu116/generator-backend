@@ -4,6 +4,7 @@ import Dash from "pages/Dash.vue";
 import Install from "pages/Install.vue";
 import Edit from "pages/Edit.vue";
 import Generate from "pages/Generate.vue";
+import Preview from "pages/Preview.vue";
 import Error404 from "pages/Error404.vue";
 const routes = [
   {
@@ -23,6 +24,10 @@ const routes = [
       {
         path: "/generate",
         component: Generate
+      },
+      {
+        path: "/preview",
+        component: Preview
       }
     ]
   }
